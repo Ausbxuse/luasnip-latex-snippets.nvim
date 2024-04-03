@@ -45,7 +45,7 @@ function M.retrieve(not_math)
       t(")"),
       t(" = "),
       i(0),
-      t({ "", ".\\end{align*}" }),
+      t({ "", "\\end{align*}" }),
     }),
   }
 end
