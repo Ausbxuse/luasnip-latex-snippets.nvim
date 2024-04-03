@@ -12,6 +12,8 @@ function M.retrieve(is_math)
   }) --[[@as function]]
 
   return {
+    parse_snippet({ trig = "choose", name = "choose" }, "\\binom{$1}{$2} $0"),
+
     parse_snippet({ trig = "sum", name = "sum" }, "\\sum_{n=${1:1}}^{${2:\\infty}} ${3:a_n z^n}"),
 
     parse_snippet(
