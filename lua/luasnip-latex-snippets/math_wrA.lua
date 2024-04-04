@@ -15,6 +15,16 @@ local frac_no_parens = {
   i(0),
 }
 
+local binom_no_parens = {
+  f(function(_, snip)
+    return string.format("\\binom{%s}", snip.captures[1])
+  end, {}),
+  t("{"),
+  i(1),
+  t("}"),
+  i(0),
+}
+
 local frac_node = {
   f(function(_, snip)
     local match = snip.trigger
@@ -38,7 +48,46 @@ local frac_node = {
     if depth ~= 0 then
       return string.format("%s\\frac{}", stripped)
     else
-      return string.format("%s\\frac{%s}", stripped:sub(1, i - 1), stripped:sub(i + 1, #stripped - 1))
+      return string.format(
+        "%s\\frac{%s}",
+        stripped:sub(1, i - 1),
+        stripped:sub(i + 1, #stripped - 1)
+      )
+    end
+  end, {}),
+  t("{"),
+  i(1),
+  t("}"),
+  i(0),
+}
+
+local binom_node = {
+  f(function(_, snip)
+    local match = snip.trigger
+    local stripped = match:sub(1, #match - 6)
+
+    local i = #stripped
+    local depth = 0
+    while i >= 0 do
+      if stripped:sub(i, i) == ")" then
+        depth = depth + 1
+      elseif stripped:sub(i, i) == "(" then
+        depth = depth - 1
+      end
+      if depth == 0 then
+        break
+      end
+      i = i - 1
+    end
+
+    if depth ~= 0 then
+      return string.format("%s\\binom{}", stripped)
+    else
+      return string.format(
+        "%s\\binom{%s}",
+        stripped:sub(1, i - 1), -- Everything before the '('
+        stripped:sub(i + 1, #stripped - 1) -- Everything between the '(' and ')'
+      )
     end
   end, {}),
   t("{"),
@@ -60,6 +109,13 @@ local frac_no_parens_triggers = {
   "(\\?[%w]+\\?^{%w*})/",
   "(\\?[%w]+\\?_{%w*})/",
   "(\\?%w+)/",
+}
+local binom_no_parens_triggers = {
+  "(\\?[%w]+\\?^%w)choose",
+  "(\\?[%w]+\\?_%w)choose",
+  "(\\?[%w]+\\?^{%w*})choose",
+  "(\\?[%w]+\\?_{%w*})choose",
+  "(\\?%w+)choose",
 }
 
 function M.retrieve(is_math)
@@ -89,6 +145,12 @@ function M.retrieve(is_math)
       name = "() frac",
       wordTrig = true,
     }, vim.deepcopy(frac_node)),
+    s({
+      priority = 1000,
+      trig = ".*%)choose",
+      name = "() choose",
+      wordTrig = true,
+    }, vim.deepcopy(binom_node)),
   }
 
   for _, trig in pairs(frac_no_parens_triggers) do
@@ -96,6 +158,13 @@ function M.retrieve(is_math)
       name = "Fraction no ()",
       trig = trig,
     }, vim.deepcopy(frac_no_parens))
+  end
+
+  for _, trig in pairs(binom_no_parens_triggers) do
+    snippets[#snippets + 1] = s({
+      name = "Fraction no ()",
+      trig = trig,
+    }, vim.deepcopy(binom_no_parens))
   end
 
   return snippets
